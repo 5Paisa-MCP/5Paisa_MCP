@@ -3,6 +3,7 @@ import { execSync } from "child_process";
 import { z } from "zod";
 import { fileURLToPath } from "url";
 import path from "path";
+import exec_filepaths from './exec_paths.json' with { type: "json" };
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 function getPythonCommand() {
@@ -36,7 +37,7 @@ class PlacingTool extends MCPTool {
     async execute({ Exchange, Asset }) {
         try {
             const pythonCmd = getPythonCommand();
-            const scriptPath = path.resolve(__dirname, "../tools/exec_codes/get_expiries.py");
+            const scriptPath = path.resolve(__dirname, exec_filepaths.get_expires);
             const command = `${pythonCmd} ${scriptPath} ${Exchange} ${Asset}`;
             const output = execSync(command);
             const data = output.toString();

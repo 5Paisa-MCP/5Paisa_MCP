@@ -1,48 +1,48 @@
-import creds
-from py5paisa import FivePaisaClient
-import json
 import sys
-import os
-import csv
+import json
 import pandas as pd
+from py5paisa import FivePaisaClient
+import creds
+import a_token
 
+# Optional: Pretty display for debugging
 pd.set_option('display.max_rows', None)
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_colwidth', None)
 pd.set_option('display.width', None)
 
-cred={
-    "APP_NAME":creds.app_name,
-    "APP_SOURCE":creds.app_source,
-    "USER_ID":creds.user_id,
-    "PASSWORD":creds.password,
-    "USER_KEY":creds.user_key,
-    "ENCRYPTION_KEY":creds.encription_key
+def create_client():
+    """Initializes and returns a FivePaisaClient instance."""
+    credentials = {
+        "APP_NAME": creds.app_name,
+        "APP_SOURCE": creds.app_source,
+        "USER_ID": creds.user_id,
+        "PASSWORD": creds.password,
+        "USER_KEY": creds.user_key,
+        "ENCRYPTION_KEY": creds.encription_key,
     }
+    client = FivePaisaClient(cred=credentials)
+    client.set_access_token(a_token.access_token, a_token.client_code)
+    return client
 
+def fetch_historical_data(client, exchange, exchange_type, scrip_code, time_frame, from_date, to_date):
+    """Fetches historical candle data."""
+    return client.historical_data(exchange, exchange_type, scrip_code, time_frame, from_date, to_date)
 
-client = FivePaisaClient(cred=cred)
+def main():
+    """Main function for CLI argument parsing and data printing."""
 
-base_dir = os.path.dirname(os.path.abspath(__file__))
-token_file = os.path.join(base_dir, "access_token.json")
+    exchange = sys.argv[1]
+    exchange_type = sys.argv[2]
+    scrip_code = int(sys.argv[3])
+    time_frame = sys.argv[4]
+    from_date = sys.argv[5]
+    to_date = sys.argv[6]
 
-with open(token_file, "r") as f:
-    token_data = json.load(f)
+    client = create_client()
+    data = fetch_historical_data(client, exchange, exchange_type, scrip_code, time_frame, from_date, to_date)
 
-client.set_access_token(token_data["access_token"], token_data["client_code"])
+    print(data)  # This is usually a list of dicts; can convert to DataFrame if needed
 
-EX = sys.argv[1]  
-ET = sys.argv[2]  
-SC = int(sys.argv[3])  
-TF = sys.argv[4]
-FD = sys.argv[5]
-TD = sys.argv[6]
-
-# data = client.historical_data('N','C',1660,'15m','2021-05-25','2021-06-16')
-data = client.historical_data(EX, ET, SC, TF, FD, TD)
-# df = pd.DataFrame(data)
-# df.to_csv('ETERNAL.csv', index=False)
-
-print(data)  
-
-
+if __name__ == "__main__":
+    main()

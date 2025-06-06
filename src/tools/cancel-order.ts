@@ -3,6 +3,7 @@ import { execSync } from "child_process";
 import { z } from "zod";
 import { fileURLToPath } from "url";
 import path from "path";
+import exec_filepaths from './exec_paths.json' with { type: "json" };
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -28,7 +29,7 @@ function getPythonCommand(): string {
 
 class PlacingTool extends MCPTool<Placinginput> {
   name = "Cancel_Order";
-  description = "Cancel the order using exchange order id, which can be found in order book";
+  description = "Cancel the order using exchange order id, which can be found in order book. Stop execution if failed.";
   schema = {
     ExchangeID: {
         type: z.string(),
@@ -39,7 +40,7 @@ class PlacingTool extends MCPTool<Placinginput> {
   async execute({ ExchangeID }: Placinginput) {
     try {
       const pythoncmd = getPythonCommand();
-      const scriptPath = path.resolve(__dirname, "../tools/exec_codes/cancel_order.py");
+      const scriptPath = path.resolve(__dirname, exec_filepaths.cancel_order);
       const command = `${pythoncmd} ${scriptPath} ${ExchangeID}`  
       const output = execSync(command);
       const data = output.toString();

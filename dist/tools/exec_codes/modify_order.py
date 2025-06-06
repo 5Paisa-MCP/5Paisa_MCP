@@ -1,47 +1,58 @@
-import creds
-from py5paisa import FivePaisaClient
-import json
 import sys
-import os
+import json
+import creds
+import a_token
+from py5paisa import FivePaisaClient
 
-cred = {
-    "APP_NAME": creds.app_name,
-    "APP_SOURCE": creds.app_source,
-    "USER_ID": creds.user_id,
-    "PASSWORD": creds.password,
-    "USER_KEY": creds.user_key,
-    "ENCRYPTION_KEY": creds.encription_key
-}
+def create_client():
+    cred = {
+        "APP_NAME": creds.app_name,
+        "APP_SOURCE": creds.app_source,
+        "USER_ID": creds.user_id,
+        "PASSWORD": creds.password,
+        "USER_KEY": creds.user_key,
+        "ENCRYPTION_KEY": creds.encription_key
+    }
+    client = FivePaisaClient(cred=cred)
+    client.set_access_token(a_token.access_token, a_token.client_code)
+    return client
 
-client = FivePaisaClient(cred=cred)
+def parse_args(args):
+    if len(args) != 5:
+        # print("Usage: python script.py <ExchOrderID> <Qty> <Price> <StopLossPrice>")
+        # print("Use -1 for Qty, Price, or StopLossPrice if you want to skip them")
+        sys.exit(1)
+    
+    try:
+        EID = int(args[1])
+        QTY = int(args[2])
+        PR = float(args[3])
+        SLPR = float(args[4])
+    except ValueError:
+        # print("Error: Invalid argument types. ExchOrderID and Qty must be int, Price and StopLossPrice must be float.")
+        sys.exit(1)
+    
+    return EID, QTY, PR, SLPR
 
-base_dir = os.path.dirname(os.path.abspath(__file__))
-token_file = os.path.join(base_dir, "access_token.json")
+def build_order_params(EID, QTY, PR, SLPR):
+    params = {"ExchOrderID": EID}
+    if QTY != -1:
+        params["Qty"] = QTY
+    if PR != -1.0:
+        params["Price"] = PR
+    if SLPR != -1.0:
+        params["StopLossPrice"] = SLPR
+    return params
 
-with open(token_file, "r") as f:
-    token_data = json.load(f)
+def main():
+    EID, QTY, PR, SLPR = parse_args(sys.argv)
+    # print(f"Parameters received - ExchOrderID: {EID}, Qty: {QTY}, Price: {PR}, StopLossPrice: {SLPR}")
 
-client.set_access_token(token_data["access_token"], token_data["client_code"])
+    client = create_client()
+    order_params = build_order_params(EID, QTY, PR, SLPR)
+    response = client.modify_order(**order_params)
 
-# Read CLI arguments
-EID = int(sys.argv[1])
-QTY = int(sys.argv[2])
-PR = float(sys.argv[3])
-SLPR = float(sys.argv[4])
+    print(json.dumps(response, indent=2))
 
-print(EID, QTY, PR, SLPR)
-
-# Build parameters dictionary
-order_params = {"ExchOrderID": EID}
-
-if QTY != -1:
-    order_params["Qty"] = QTY
-if PR != float(-1):
-    order_params["Price"] = PR
-if SLPR != float(-1):
-    order_params["StopLossPrice"] = SLPR
-
-# Call API with only valid parameters
-order = client.modify_order(**order_params)
-
-print(json.dumps(order, indent=2))
+if __name__ == "__main__":
+    main()

@@ -2,6 +2,7 @@ import { MCPTool } from "mcp-framework";
 import { execSync } from "child_process";
 import { fileURLToPath } from "url";
 import path from "path";
+import exec_filepaths from './exec_paths.json' with { type: "json" };
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 function getPythonCommand() {
@@ -26,7 +27,7 @@ class HoldingsTool extends MCPTool {
     async execute() {
         try {
             const pythoncmd = getPythonCommand();
-            const scriptPath = path.resolve(__dirname, "../tools/exec_codes/order_book.py");
+            const scriptPath = path.resolve(__dirname, exec_filepaths.order_book);
             const output = execSync(`${pythoncmd} ${scriptPath}`);
             const data = output.toString();
             return data;

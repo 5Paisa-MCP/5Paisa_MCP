@@ -1,28 +1,31 @@
-import creds
-from py5paisa import FivePaisaClient
 import json
-import os
+import creds
+import a_token
+from py5paisa import FivePaisaClient
 
-cred={
-    "APP_NAME":creds.app_name,
-    "APP_SOURCE":creds.app_source,
-    "USER_ID":creds.user_id,
-    "PASSWORD":creds.password,
-    "USER_KEY":creds.user_key,
-    "ENCRYPTION_KEY":creds.encription_key
+def create_client():
+    """Initializes and returns a FivePaisaClient with credentials."""
+    credentials = {
+        "APP_NAME": creds.app_name,
+        "APP_SOURCE": creds.app_source,
+        "USER_ID": creds.user_id,
+        "PASSWORD": creds.password,
+        "USER_KEY": creds.user_key,
+        "ENCRYPTION_KEY": creds.encription_key,
     }
+    client = FivePaisaClient(cred=credentials)
+    client.set_access_token(a_token.access_token, a_token.client_code)
+    return client
 
+def fetch_positions(client):
+    """Fetches current open positions."""
+    return client.positions()
 
-client = FivePaisaClient(cred=cred)
+def main():
+    """Main function to get and print positions as JSON."""
+    client = create_client()
+    positions = fetch_positions(client)
+    print(json.dumps(positions))  
 
-base_dir = os.path.dirname(os.path.abspath(__file__))
-token_file = os.path.join(base_dir, "access_token.json")
-
-with open(token_file, "r") as f:
-    token_data = json.load(f)
-
-client.set_access_token(token_data["access_token"], token_data["client_code"])
-
-pos = client.positions()
-print(json.dumps(pos))  # MUST be pure JSON output
-
+if __name__ == "__main__":
+    main()

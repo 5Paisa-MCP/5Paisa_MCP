@@ -1,29 +1,31 @@
-import creds
-from py5paisa import FivePaisaClient
 import json
-import os
+import creds
+import a_token
+from py5paisa import FivePaisaClient
 
-cred={
-    "APP_NAME":creds.app_name,
-    "APP_SOURCE":creds.app_source,
-    "USER_ID":creds.user_id,
-    "PASSWORD":creds.password,
-    "USER_KEY":creds.user_key,
-    "ENCRYPTION_KEY":creds.encription_key
+def create_client():
+    """Initializes and returns a FivePaisaClient instance with credentials."""
+    credentials = {
+        "APP_NAME": creds.app_name,
+        "APP_SOURCE": creds.app_source,
+        "USER_ID": creds.user_id,
+        "PASSWORD": creds.password,
+        "USER_KEY": creds.user_key,
+        "ENCRYPTION_KEY": creds.encription_key,
     }
+    client = FivePaisaClient(cred=credentials)
+    client.set_access_token(a_token.access_token, a_token.client_code)
+    return client
 
+def fetch_margin(client):
+    """Fetches margin details of the client."""
+    return client.margin()
 
-client = FivePaisaClient(cred=cred)
+def main():
+    """Main function to get and print margin as pure JSON."""
+    client = create_client()
+    margin = fetch_margin(client)
+    print(json.dumps(margin))  # Pure JSON output
 
-base_dir = os.path.dirname(os.path.abspath(__file__))
-token_file = os.path.join(base_dir, "access_token.json")
-# print(token_file)
-
-with open(token_file, "r") as f:
-    token_data = json.load(f)
-
-client.set_access_token(token_data["access_token"], token_data["client_code"])
-
-margin = client.margin()
-print(json.dumps(margin))  # MUST be pure JSON output
-
+if __name__ == "__main__":
+    main()

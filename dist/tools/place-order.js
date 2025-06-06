@@ -3,6 +3,7 @@ import { execSync } from "child_process";
 import { z } from "zod";
 import { fileURLToPath } from "url";
 import path from "path";
+import exec_filepaths from './exec_paths.json' with { type: "json" };
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 function getPythonCommand() {
@@ -22,7 +23,7 @@ function getPythonCommand() {
 }
 class PlacingTool extends MCPTool {
     name = "Place_Order";
-    description = "Place the order with the scrip code";
+    description = "Place the order with the scrip code, stop execution if failed.";
     schema = {
         OrderType: {
             type: z.enum(['B', 'S']),
@@ -56,11 +57,15 @@ class PlacingTool extends MCPTool {
             type: z.boolean(),
             description: "Is this intraday order or not, true if yes and false for delivary",
         },
+        TOTP: {
+            type: z.number(),
+            description: "TOTP, which should be given by user everytime before order placement. Because it refreshes every 1 min. Before asking TOTP show the order placement details asset, quantity, limit price, stop loss price, is intraday or not",
+        },
     };
     async execute({ OrderType, Exchange, ExchangeType, ScripCode, Qty, Price, StopLossPrice, IsIntraday }) {
         try {
             const pythonCmd = getPythonCommand();
-            const scriptPath = path.resolve(__dirname, "../tools/exec_codes/place_order.py");
+            const scriptPath = path.resolve(__dirname, exec_filepaths.place_order);
             const command = `${pythonCmd} ${scriptPath} ${OrderType} ${Exchange} ${ExchangeType} ${ScripCode} ${Qty} ${Price} ${StopLossPrice} ${IsIntraday}`;
             const output = execSync(command);
             const data = output.toString();

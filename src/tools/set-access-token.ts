@@ -4,6 +4,7 @@ import { execSync } from "child_process";
 // import { MCPServer } from "mcp-framework";
 import { fileURLToPath } from "url";
 import path from "path";
+import exec_filepaths from './exec_paths.json' with { type: "json" };
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -31,7 +32,7 @@ class SetAccessTokenTool extends MCPTool<{}> {
   async execute() {
     try {
       const pythonCmd = getPythonCommand();
-      const scriptPath = path.resolve(__dirname, "../tools/exec_codes/set_access_token.py");
+      const scriptPath = path.resolve(__dirname, exec_filepaths.set_access_token);
       const output = execSync(`${pythonCmd} ${scriptPath}`).toString();
 
       return {

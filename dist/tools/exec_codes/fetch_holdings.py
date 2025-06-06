@@ -1,29 +1,32 @@
 import creds
-from py5paisa import FivePaisaClient
+import a_token
 import json
-import os
+from py5paisa import FivePaisaClient
 
-cred={
-    "APP_NAME":creds.app_name,
-    "APP_SOURCE":creds.app_source,
-    "USER_ID":creds.user_id,
-    "PASSWORD":creds.password,
-    "USER_KEY":creds.user_key,
-    "ENCRYPTION_KEY":creds.encription_key
+def create_client():
+    """Initializes and returns a FivePaisaClient instance with credentials."""
+    credentials = {
+        "APP_NAME": creds.app_name,
+        "APP_SOURCE": creds.app_source,
+        "USER_ID": creds.user_id,
+        "PASSWORD": creds.password,
+        "USER_KEY": creds.user_key,
+        "ENCRYPTION_KEY": creds.encription_key,
     }
+    client = FivePaisaClient(cred=credentials)
+    client.set_access_token(a_token.access_token, a_token.client_code)
+    return client
 
+def fetch_holdings(client):
+    """Fetches holdings from the client's account."""
+    holdings = client.holdings()
+    return holdings
 
-client = FivePaisaClient(cred=cred)
+def main():
+    """Main function to get and print holdings as JSON."""
+    client = create_client()
+    holdings = fetch_holdings(client)
+    print(json.dumps(holdings))  # Ensure pure JSON output
 
-base_dir = os.path.dirname(os.path.abspath(__file__))
-token_file = os.path.join(base_dir, "access_token.json")
-# print(token_file)
-
-with open(token_file, "r") as f:
-    token_data = json.load(f)
-
-client.set_access_token(token_data["access_token"], token_data["client_code"])
-
-holdings = client.holdings()
-print(json.dumps(holdings))  # MUST be pure JSON output
-
+if __name__ == "__main__":
+    main()

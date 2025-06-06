@@ -6,9 +6,12 @@ import os
 import requests
 import pandas as pd
 import io
+import a_token
+import file_paths
+
 
 def fetch_scrip_master(saving_path):
-    url = "https://Openapi.5paisa.com/VendorsAPI/Service1.svc/ScripMaster/segment/all"
+    url = file_paths.scrip_master_url
     response = requests.get(url)
 
     if response.status_code == 200:
@@ -19,37 +22,38 @@ def fetch_scrip_master(saving_path):
     
     return None
 
-if __name__ == "__main__":
 
-    cred={
-        "APP_NAME":creds.app_name,
-        "APP_SOURCE":creds.app_source,
-        "USER_ID":creds.user_id,
-        "PASSWORD":creds.password,
-        "USER_KEY":creds.user_key,
-        "ENCRYPTION_KEY":creds.encription_key
-        }
+def get_and_save_access_token(client: FivePaisaClient, token_path: str) -> str:
+    """
+    Generates TOTP, gets access token from 5paisa client, and saves it to a file.
+    Returns the access token string.
+    """
+    totp = pyotp.TOTP(creds.TOTP_SECRET).now()
+    client.get_totp_session(creds.client_code, totp, creds.pin)
+    access_token = client.get_access_token()
+    with open(token_path, "w") as f:
+        f.write(f'access_token = "{access_token}"\n')
+        f.write(f'client_code = "{creds.client_code}"\n')
+    return access_token
 
+
+def main():
+    cred = {
+        "APP_NAME": creds.app_name,
+        "APP_SOURCE": creds.app_source,
+        "USER_ID": creds.user_id,
+        "PASSWORD": creds.password,
+        "USER_KEY": creds.user_key,
+        "ENCRYPTION_KEY": creds.encription_key
+    }
 
     client = FivePaisaClient(cred=cred)
 
-    totp = pyotp.TOTP(creds.TOTP_SECRET).now()
-    client.get_totp_session(creds.client_code,totp,creds.pin)
+    at = get_and_save_access_token(client, file_paths.token_file)
+    print(at)
 
-    access_token = client.get_access_token()
+    scrip_df = fetch_scrip_master(file_paths.scrip_master)
 
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    token_file = os.path.join(base_dir, "access_token.json")
 
-    with open(token_file, "w") as f:
-        json.dump({
-            "access_token": access_token,
-            "client_code": creds.client_code
-        }, f)
-
-    print(access_token)
-
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    saving_path = os.path.join(base_dir, "scrip_master.csv")
-    scrip_df = fetch_scrip_master(saving_path)
-
+if __name__ == "__main__":
+    main()

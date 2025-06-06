@@ -1,32 +1,32 @@
-import creds
-from py5paisa import FivePaisaClient
-import json
 import sys
-import os
+import json
+import creds
+import a_token
+from py5paisa import FivePaisaClient
 
-cred = {
-    "APP_NAME": creds.app_name,
-    "APP_SOURCE": creds.app_source,
-    "USER_ID": creds.user_id,
-    "PASSWORD": creds.password,
-    "USER_KEY": creds.user_key,
-    "ENCRYPTION_KEY": creds.encription_key
-}
+def create_client():
+    cred = {
+        "APP_NAME": creds.app_name,
+        "APP_SOURCE": creds.app_source,
+        "USER_ID": creds.user_id,
+        "PASSWORD": creds.password,
+        "USER_KEY": creds.user_key,
+        "ENCRYPTION_KEY": creds.encription_key
+    }
+    client = FivePaisaClient(cred=cred)
+    client.set_access_token(a_token.access_token, a_token.client_code)
+    return client
 
-client = FivePaisaClient(cred=cred)
+def cancel_order(client, exch_order_id):
+    return client.cancel_order(exch_order_id=exch_order_id)
 
-base_dir = os.path.dirname(os.path.abspath(__file__))
-token_file = os.path.join(base_dir, "access_token.json")
+def main():
+    
+    exch_order_id = int(sys.argv[1])
 
-with open(token_file, "r") as f:
-    token_data = json.load(f)
+    client = create_client()
+    response = cancel_order(client, exch_order_id)
+    print(json.dumps(response, indent=2))
 
-client.set_access_token(token_data["access_token"], token_data["client_code"])
-
-# Read CLI arguments
-EID = int(sys.argv[1])
-
-# Call API with only valid parameters
-order = client.cancel_order(exch_order_id=EID)
-
-print(json.dumps(order, indent=2))
+if __name__ == "__main__":
+    main()

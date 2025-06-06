@@ -1,12 +1,13 @@
 import pandas as pd
 import sys
 import os
+import file_paths  # Make sure this module defines `scrip_master` path
 
+# Configure pandas to show full output (optional)
 pd.set_option('display.max_rows', None)
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_colwidth', None)
 pd.set_option('display.width', None)
-
 
 def find_scrip_codes_by_keyword_and_type(
     csv_path,
@@ -18,37 +19,42 @@ def find_scrip_codes_by_keyword_and_type(
     exchange_column='Exch',
     exchange_type_column='ExchType'
 ):
-    # Load the CSV
-    df = pd.read_csv(csv_path)
+    """Filter scrip codes by keyword, exchange type, and exchange."""
+    try:
+        df = pd.read_csv(csv_path)
+    except FileNotFoundError:
+        print(f"Error: File not found at {csv_path}")
+        sys.exit(1)
 
-    # Filter by keyword in Full Name (case-insensitive)
     name_matches = df[df[name_column].str.contains(keyword, case=False, na=False)]
-
-    # Further filter by Exchange Type (exact match)
-    filtered1 = name_matches[name_matches[exchange_type_column] == exchange_type_filter]
-
-    filtered = filtered1[filtered1[exchange_column]== exchange]
+    filtered = name_matches[
+        (name_matches[exchange_type_column] == exchange_type_filter) &
+        (name_matches[exchange_column] == exchange)
+    ]
 
     if filtered.empty:
-        print(f"No matches found for keyword: '{keyword}' and Exchange Type: '{exchange_type_filter}'")
+        print(f"No matches found for keyword: '{keyword}', Exchange Type: '{exchange_type_filter}', Exchange: '{exchange}'")
         return None
 
-    # Select only relevant columns to return
-    result = filtered[[scrip_code_column, exchange_column, exchange_type_column, name_column]]
+    return filtered[[scrip_code_column, exchange_column, exchange_type_column, name_column]]
 
-    print(f"Found {len(result)} matches:")
+def main():
+    """Main function to parse args and print matching scrip info."""
 
-    return result
+    keyword = sys.argv[1]
+    exchange_type = sys.argv[2]
+    exchange = sys.argv[3]
 
-# Example usage
-base_dir = os.path.dirname(os.path.abspath(__file__))
-csv_path = os.path.join(base_dir, "scrip_master.csv")
+    results = find_scrip_codes_by_keyword_and_type(
+        file_paths.scrip_master,
+        keyword,
+        exchange_type,
+        exchange
+    )
 
-keyword = sys.argv[1]
-exchange_type = sys.argv[2]  
-exchange = sys.argv[3]
+    if results is not None:
+        print(f"Found {len(results)} match(es):\n")
+        print(results)
 
-results = find_scrip_codes_by_keyword_and_type(csv_path, keyword, exchange_type, exchange)
-
-if results is not None:
-    print(results)
+if __name__ == "__main__":
+    main()

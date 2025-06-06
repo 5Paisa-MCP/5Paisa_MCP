@@ -1,55 +1,79 @@
-import creds
-from py5paisa import FivePaisaClient
-import json
 import sys
-import os
+import json
+import creds
+import a_token
+from py5paisa import FivePaisaClient
+import pyotp
 
-cred={
-    "APP_NAME":creds.app_name,
-    "APP_SOURCE":creds.app_source,
-    "USER_ID":creds.user_id,
-    "PASSWORD":creds.password,
-    "USER_KEY":creds.user_key,
-    "ENCRYPTION_KEY":creds.encription_key
+def create_client():
+    cred = {
+        "APP_NAME": creds.app_name,
+        "APP_SOURCE": creds.app_source,
+        "USER_ID": creds.user_id,
+        "PASSWORD": creds.password,
+        "USER_KEY": creds.user_key,
+        "ENCRYPTION_KEY": creds.encription_key
     }
+    client = FivePaisaClient(cred=cred)
+    client.set_access_token(a_token.access_token, a_token.client_code)
+    return client
 
+def get_last_traded_price(client, exchange, exchange_type, scrip_code):
+    market_snapshot = client.fetch_market_snapshot([{
+        "Exchange": exchange,
+        "ExchangeType": exchange_type,
+        "ScripCode": scrip_code
+    }])
+    ltp = float(market_snapshot['Data'][0]['LastTradedPrice'])
+    return ltp
 
-client = FivePaisaClient(cred=cred)
+def parse_args(args):
 
-base_dir = os.path.dirname(os.path.abspath(__file__))
-token_file = os.path.join(base_dir, "access_token.json")
+    OT = sys.argv[1]
+    EX = sys.argv[2]  
+    ET = sys.argv[3]  
+    SC = int(sys.argv[4])  
+    QT = int(sys.argv[5])  
+    PR = float(sys.argv[6])  
+    try:
+        SLP = sys.argv[7]
+    except IndexError:
+        SLP = 0
+    try:
+        ID = sys.argv[8]
+    except IndexError:
+        ID = 0
+    TOTP = int(sys.argv[9])
 
-with open(token_file, "r") as f:
-    token_data = json.load(f)
+    return OT, EX, ET, SC, QT, PR, SLP, ID, TOTP
 
-client.set_access_token(token_data["access_token"], token_data["client_code"])
+def place_order(client, OT, EX, ET, SC, QT, PR, SLP, ID):
+    # If price is 0, use LTP * 1.01
+    if PR == 0:
+        ltp = get_last_traded_price(client, EX, ET, SC)
+        PR = round(ltp * 1.01, 2)  # round as appropriate
 
-OT = sys.argv[1]
-EX = sys.argv[2]  
-ET = sys.argv[3]  
-SC = int(sys.argv[4])  
-QT = int(sys.argv[5])  
-PR = float(sys.argv[6])  
-try:
-    SLP = sys.argv[7]
-except IndexError:
-    SLP = 0
-try:
-    ID = sys.argv[8]
-except IndexError:
-    ID = 0
+    order = client.place_order(
+        OrderType=OT,
+        Exchange=EX,
+        ExchangeType=ET,
+        ScripCode=SC,
+        Qty=QT,
+        Price=PR,
+        StopLossPrice=SLP,
+        IsIntraday=ID
+    )
+    return order
 
+def main():
+    OT, EX, ET, SC, QT, PR, SLP, ID, TOTP = parse_args(sys)
+    client = create_client()
+    if TOTP == pyotp.TOTP(creds.TOTP_SECRET).now():
+        order_response = place_order(client, OT, EX, ET, SC, QT, PR, SLP, ID)
+    else:
+        order_response = "{Enter right TOTP}"
 
-a=[{"Exchange":EX,"ExchangeType":ET,"ScripCode":SC},]
-data = client.fetch_market_snapshot(a)
+    print(json.dumps(order_response, indent=2))
 
-lpp = float(data['Data'][0]['LastTradedPrice'])*1.01
-
-if(PR == 0):
-    PR = lpp
-
-order = client.place_order(OrderType=OT,Exchange=EX,ExchangeType=ET, ScripCode = SC, Qty=QT, Price=PR, StopLossPrice=SLP, IsIntraday=ID)
-
-print(json.dumps(order, indent=2))  
-
-
+if __name__ == "__main__":
+    main()
