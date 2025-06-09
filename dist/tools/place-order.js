@@ -62,11 +62,11 @@ class PlacingTool extends MCPTool {
             description: "TOTP, which should be given by user everytime before order placement. Because it refreshes every 1 min. Before asking TOTP show the order placement details asset, quantity, limit price, stop loss price, is intraday or not",
         },
     };
-    async execute({ OrderType, Exchange, ExchangeType, ScripCode, Qty, Price, StopLossPrice, IsIntraday }) {
+    async execute({ OrderType, Exchange, ExchangeType, ScripCode, Qty, Price, StopLossPrice, IsIntraday, TOTP }) {
         try {
             const pythonCmd = getPythonCommand();
             const scriptPath = path.resolve(__dirname, exec_filepaths.place_order);
-            const command = `${pythonCmd} ${scriptPath} ${OrderType} ${Exchange} ${ExchangeType} ${ScripCode} ${Qty} ${Price} ${StopLossPrice} ${IsIntraday}`;
+            const command = `${pythonCmd} ${scriptPath} ${OrderType} ${Exchange} ${ExchangeType} ${ScripCode} ${Qty} ${Price} ${StopLossPrice} ${IsIntraday} ${TOTP}`;
             const output = execSync(command);
             const data = output.toString();
             return data;
