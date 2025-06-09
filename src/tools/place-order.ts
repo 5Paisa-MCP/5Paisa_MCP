@@ -77,11 +77,11 @@ class PlacingTool extends MCPTool<Placinginput> {
     },
   };    
 
-  async execute({ OrderType, Exchange, ExchangeType, ScripCode, Qty, Price, StopLossPrice, IsIntraday }: Placinginput) {
+  async execute({ OrderType, Exchange, ExchangeType, ScripCode, Qty, Price, StopLossPrice, IsIntraday, TOTP }: Placinginput) {
     try {
       const pythonCmd = getPythonCommand();
       const scriptPath = path.resolve(__dirname, exec_filepaths.place_order);
-      const command = `${pythonCmd} ${scriptPath} ${OrderType} ${Exchange} ${ExchangeType} ${ScripCode} ${Qty} ${Price} ${StopLossPrice} ${IsIntraday}`  
+      const command = `${pythonCmd} ${scriptPath} ${OrderType} ${Exchange} ${ExchangeType} ${ScripCode} ${Qty} ${Price} ${StopLossPrice} ${IsIntraday}, ${TOTP}`  
       const output = execSync(command);
       const data = output.toString();
       return data;
