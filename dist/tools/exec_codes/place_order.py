@@ -68,7 +68,8 @@ def place_order(client, OT, EX, ET, SC, QT, PR, SLP, ID):
 def main():
     OT, EX, ET, SC, QT, PR, SLP, ID, TOTP = parse_args(sys)
     client = create_client()
-    if TOTP == pyotp.TOTP(creds.TOTP_SECRET).now():
+    otp = pyotp.TOTP(creds.TOTP_SECRET).now()
+    if int(TOTP) == int(otp):
         order_response = place_order(client, OT, EX, ET, SC, QT, PR, SLP, ID)
     else:
         order_response = "{Enter right TOTP}"
