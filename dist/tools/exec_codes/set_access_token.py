@@ -1,70 +1,59 @@
 import creds
 from py5paisa import FivePaisaClient
 import json
-
-import http.server
-import socketserver
-import webbrowser
-from urllib.parse import urlparse, parse_qs
-
-request_token_value = None
-
-vendor_key = creds.user_key
-PORT = 8000
-response_url = f"http://127.0.0.1:{PORT}"
-login_url = f"https://dev-openapi.5paisa.com/WebVendorLogin/VLogin/Index?VendorKey={vendor_key}&ResponseURL={response_url}"
+import pyotp
+import os
+import requests
+import pandas as pd
+import io
+import a_token
+import file_paths
 
 
-class TokenHandler(http.server.SimpleHTTPRequestHandler):
-    def do_GET(self):
-        global request_token_value
-        parsed_url = urlparse(self.path)
-        query_params = parse_qs(parsed_url.query)
-        request_token = query_params.get("RequestToken", [None])[0]
+def fetch_scrip_master(saving_path):
+    url = file_paths.scrip_master_url
+    response = requests.get(url)
 
-        if request_token:
-            request_token_value = request_token
-            print("\n Request token received:")
-        else:
-            print("No request_token found in the redirected URL.")
+    if response.status_code == 200:
+        csv_data = response.text
+        df = pd.read_csv(io.StringIO(csv_data))  
+        df.to_csv(saving_path, index=False)
+        return df
+    
+    return None
 
-        # Respond to browser
-        self.send_response(200)
-        self.send_header("Content-type", "text/html")
-        self.end_headers()
-        self.wfile.write(b"<h1>Login successful. You may now close this window.</h1>")
 
-# === Function to launch login and get token ===
-def get_request_token():
-    global request_token_value
-    webbrowser.open(login_url)
+def get_and_save_access_token(client: FivePaisaClient, token_path: str) -> str:
+    """
+    Generates TOTP, gets access token from 5paisa client, and saves it to a file.
+    Returns the access token string.
+    """
+    totp = pyotp.TOTP(creds.TOTP_SECRET).now()
+    client.get_totp_session(creds.client_code, totp, creds.pin)
+    access_token = client.get_access_token()
+    with open(token_path, "w") as f:
+        f.write(f'access_token = "{access_token}"\n')
+        f.write(f'client_code = "{creds.client_code}"\n')
+    return access_token
 
-    with socketserver.TCPServer(("", PORT), TokenHandler) as httpd:
-        httpd.handle_request()
 
-    return request_token_value
-
-if __name__ == "__main__":
-
-    cred={
-        "APP_NAME":creds.app_name,
-        "APP_SOURCE":creds.app_source,
-        "USER_ID":creds.user_id,
-        "PASSWORD":creds.password,
-        "USER_KEY":creds.user_key,
-        "ENCRYPTION_KEY":creds.encription_key
-        }
+def main():
+    cred = {
+        "APP_NAME": creds.app_name,
+        "APP_SOURCE": creds.app_source,
+        "USER_ID": creds.user_id,
+        "PASSWORD": creds.password,
+        "USER_KEY": creds.user_key,
+        "ENCRYPTION_KEY": creds.encription_key
+    }
 
     client = FivePaisaClient(cred=cred)
 
-    RequestToken = get_request_token()
-    client.get_oauth_session(RequestToken)
-    access_token = client.get_access_token()
+    at = get_and_save_access_token(client, file_paths.token_file)
+    # print(at)
 
-    with open("access_token.json", "w") as f:
-        json.dump({
-            "access_token": access_token,
-            "client_code": creds.client_code
-        }, f)
+    scrip_df = fetch_scrip_master(file_paths.scrip_master)
 
 
+if __name__ == "__main__":
+    main()
