@@ -48,10 +48,17 @@ def parse_args(args):
     return OT, EX, ET, SC, QT, PR, SLP, ID, TOTP
 
 def place_order(client, OT, EX, ET, SC, QT, PR, SLP, ID):
-    # If price is 0, use LTP * 1.01
+    # If price is 0, use adjusted LTP:
+    # For Buy (B): LTP * 1.01
+    # For Sell (S): LTP * 0.99
     if PR == 0:
         ltp = get_last_traded_price(client, EX, ET, SC)
-        PR = round(ltp * 1.01, 2)  # round as appropriate
+        if OT.upper() == 'B':
+            PR = round(ltp * 1.01, 2)
+        elif OT.upper() == 'S':
+            PR = round(ltp * 0.99, 2)
+        else:
+            raise ValueError(f"Unsupported OrderType '{OT}'. Expected 'B' or 'S'.")
 
     order = client.place_order(
         OrderType=OT,
